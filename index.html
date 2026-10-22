@@ -1,87 +1,1036 @@
-<!doctype html>
+
+<!DOCTYPE html>
 <html lang="mn">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f6f0e6">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#101f32">
   <meta name="description" content="С. Тэмүгэгийн 1 насны төрсөн өдрийн урилга">
-  <title>Тэмүгэгийн 1 насны төрсөн өдөр</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="script.js" defer></script>
+  <title>С. Тэмүгэгийн төрсөн өдрийн урилга</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Noto+Serif:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --night: #101f32;
+      --cream: #f8f1e5;
+      --paper: #fffdf8;
+      --blue: #7392aa;
+      --blue-dark: #294c6d;
+      --gold: #c6a56a;
+      --gold-light: #efdbad;
+      --rose: #aa414c;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      min-height: 100svh;
+      font-family: "Noto Serif", Georgia, serif;
+      color: var(--cream);
+      background:
+        radial-gradient(ellipse at 50% 5%, #33516e 0, transparent 42%),
+        radial-gradient(ellipse at 8% 90%, #24354a 0, transparent 40%),
+        radial-gradient(ellipse at 95% 75%, #263b50 0, transparent 36%),
+        var(--night);
+      overflow-x: hidden;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    button:focus-visible {
+      outline: 2px solid var(--gold-light);
+      outline-offset: 5px;
+    }
+
+    .scene {
+      min-height: 100vh;
+      min-height: 100svh;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 34px 16px;
+      isolation: isolate;
+      overflow: hidden;
+    }
+
+    .scene::before {
+      content: "";
+      position: fixed;
+      inset: 13px;
+      border: 1px solid #d9bd8054;
+      pointer-events: none;
+      z-index: 20;
+    }
+
+    .scene::after {
+      content: "";
+      position: fixed;
+      inset: 20px;
+      border: 1px solid #ffffff0a;
+      pointer-events: none;
+      z-index: 20;
+    }
+
+    .ambient {
+      position: absolute;
+      z-index: -1;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .ambient-one {
+      width: 340px;
+      height: 340px;
+      left: -160px;
+      top: -100px;
+      background: radial-gradient(circle, #8baac326, transparent 70%);
+    }
+
+    .ambient-two {
+      width: 400px;
+      height: 400px;
+      right: -200px;
+      bottom: -130px;
+      background: radial-gradient(circle, #b99a6020, transparent 70%);
+    }
+
+    .ambient-three {
+      width: 280px;
+      height: 280px;
+      right: 8%;
+      top: 8%;
+      background: radial-gradient(circle, #587da01b, transparent 70%);
+    }
+
+    .stars {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .star {
+      position: absolute;
+      color: var(--gold-light);
+      opacity: .65;
+      animation: twinkle 4s ease-in-out infinite;
+    }
+
+    .star:nth-child(1) {
+      top: 13%;
+      left: 13%;
+      font-size: 17px;
+    }
+
+    .star:nth-child(2) {
+      top: 21%;
+      right: 14%;
+      font-size: 23px;
+      animation-delay: 1s;
+    }
+
+    .star:nth-child(3) {
+      top: 48%;
+      left: 8%;
+      font-size: 13px;
+      animation-delay: 2s;
+    }
+
+    .star:nth-child(4) {
+      bottom: 17%;
+      right: 13%;
+      font-size: 19px;
+      animation-delay: 1.5s;
+    }
+
+    .star:nth-child(5) {
+      bottom: 22%;
+      left: 18%;
+      font-size: 12px;
+      animation-delay: .5s;
+    }
+
+    .star:nth-child(6) {
+      top: 36%;
+      right: 7%;
+      font-size: 10px;
+      animation-delay: 2.5s;
+    }
+
+    /* Нээлтийн дэлгэц */
+
+    .intro {
+      width: min(100%, 470px);
+      text-align: center;
+      position: relative;
+      z-index: 2;
+      transition:
+        opacity .6s ease,
+        transform .75s cubic-bezier(.2,.7,.2,1);
+    }
+
+    .overline {
+      margin: 0;
+      color: var(--gold-light);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: .27em;
+      line-height: 1.9;
+    }
+
+    .intro-description {
+      margin: 12px 0 0;
+      color: #d4dce2;
+      font-size: 11px;
+      line-height: 1.9;
+      letter-spacing: .025em;
+    }
+
+    .mini-rule {
+      width: 70px;
+      height: 1px;
+      margin: 21px auto 0;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        var(--gold),
+        transparent
+      );
+    }
+
+    /* Дугтуй */
+
+    .envelope-wrap {
+      position: relative;
+      width: min(100%, 355px);
+      height: 310px;
+      margin: 18px auto 0;
+      perspective: 1200px;
+    }
+
+    .envelope-shadow {
+      position: absolute;
+      left: 8%;
+      right: 8%;
+      bottom: 18px;
+      height: 38px;
+      border-radius: 50%;
+      background: #00000055;
+      filter: blur(17px);
+    }
+
+    .envelope {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 34px;
+      height: 211px;
+      transform-style: preserve-3d;
+      filter: drop-shadow(0 12px 19px #00000012);
+    }
+
+    .env-back {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(140deg, #e8e1d4, #b8cbd3 65%, #d9e0da);
+      border: 1px solid #f2dfb76b;
+      border-radius: 4px;
+    }
+
+    .env-paper {
+      position: absolute;
+      z-index: 1;
+      left: 7%;
+      right: 7%;
+      bottom: 0;
+      height: 96%;
+      padding-top: 24px;
+      background: var(--paper);
+      color: var(--blue-dark);
+      text-align: center;
+      border: 1px solid #dfd1b3;
+      box-shadow: 0 3px 12px #263b5020;
+      transition: transform 1.15s cubic-bezier(.2,.75,.2,1);
+    }
+
+    .env-paper-ornament {
+      color: var(--gold);
+      font-size: 13px;
+      letter-spacing: .3em;
+    }
+
+    .env-paper-title {
+      margin-top: 12px;
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-size: 30px;
+      line-height: 1;
+    }
+
+    .env-paper-subtitle {
+      margin-top: 7px;
+      font-size: 9px;
+      letter-spacing: .08em;
+    }
+
+    .env-side-left,
+    .env-side-right,
+    .env-front {
+      position: absolute;
+      inset: 0;
+    }
+
+    .env-side-left {
+      z-index: 2;
+      background: linear-gradient(135deg, #edf0e9, #c6d2d3);
+      clip-path: polygon(0 0, 52% 57%, 0 100%);
+    }
+
+    .env-side-right {
+      z-index: 2;
+      background: linear-gradient(225deg, #f4eee3, #c1d0d3);
+      clip-path: polygon(100% 0, 48% 57%, 100% 100%);
+    }
+
+    .env-front {
+      z-index: 3;
+      background: linear-gradient(160deg, #dce4df, #b9cbd1);
+      clip-path: polygon(0 100%, 50% 42%, 100% 100%);
+      border-radius: 0 0 4px 4px;
+    }
+
+    .env-front::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(160deg, #ffffff23, transparent 65%);
+      clip-path: polygon(0 100%, 50% 42%, 100% 100%);
+    }
+
+    .env-flap {
+      position: absolute;
+      z-index: 5;
+      inset: 0 0 auto;
+      height: 64%;
+      background: linear-gradient(160deg, #f3f0e7 0%, #d6e0df 80%);
+      clip-path: polygon(0 0, 100% 0, 50% 100%);
+      transform-origin: 50% 0;
+      transition: transform .8s cubic-bezier(.18,.7,.25,1);
+      backface-visibility: hidden;
+    }
+
+    /* Лац өөрөө урилга нээх товч */
+
+    .seal-button {
+      position: absolute;
+      z-index: 8;
+      top: 54%;
+      left: 50%;
+      width: 110px;
+      height: 110px;
+      transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1px;
+      padding: 0;
+      border: 1px solid #f3d89f;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 31% 23%, #d88b81 0%, #b44953 47%, #842e3c 100%);
+      color: #fff4db;
+      font-family: "Noto Serif", Georgia, serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .11em;
+      line-height: 1.7;
+      cursor: pointer;
+      box-shadow:
+        0 0 0 4px #c5a36638,
+        0 0 0 7px #e7d2a826,
+        0 10px 25px #32111c5c,
+        inset 0 2px 7px #ffffff40,
+        inset 0 -8px 16px #54152550;
+      -webkit-tap-highlight-color: transparent;
+      transition:
+        opacity .45s ease,
+        transform .7s cubic-bezier(.2,.7,.2,1),
+        filter .3s ease;
+    }
+
+    .seal-button::before {
+      content: "✦";
+      position: absolute;
+      top: 10px;
+      font-size: 10px;
+      color: #f5dca6;
+    }
+
+    .seal-button::after {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      border: 1px solid #f5dfb58a;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .seal-button:hover {
+      filter: brightness(1.1);
+    }
+
+    .seal-button:active {
+      filter: brightness(.94);
+    }
+
+    .seal-help {
+      margin: 2px 0 0;
+      color: #cbd6dd;
+      font-size: 10px;
+      letter-spacing: .025em;
+      line-height: 1.8;
+    }
+
+    .pulse-dot {
+      display: inline-block;
+      width: 5px;
+      height: 5px;
+      margin: 0 7px 2px 0;
+      border-radius: 50%;
+      background: var(--gold-light);
+      animation: pulse 1.8s ease-in-out infinite;
+    }
+
+    .cover-signature {
+      margin: 34px 0 0;
+      color: #e0ca9d;
+      font-size: 9px;
+      letter-spacing: .25em;
+    }
+
+    /* Үндсэн урилгын хуудас */
+
+    .invitation {
+      position: fixed;
+      z-index: 15;
+      top: 50%;
+      left: 50%;
+      width: min(calc(100% - 32px), 460px);
+      max-height: calc(100vh - 32px);
+      max-height: calc(100svh - 32px);
+      overflow-y: auto;
+      padding: 36px 27px 27px;
+      color: var(--blue-dark);
+      text-align: center;
+      background:
+        radial-gradient(ellipse at 0 0, #f5e8cb55, transparent 35%),
+        var(--paper);
+      border: 1px solid #cfb77f;
+      outline: 5px solid #ffffff0c;
+      box-shadow:
+        0 35px 100px #00000055,
+        0 0 65px #d6b7770c;
+      opacity: 0;
+      visibility: hidden;
+      transform: translate(-50%, calc(-50% + 90px)) scale(.9);
+      transition:
+        opacity .85s ease,
+        transform 1s cubic-bezier(.18,.8,.2,1),
+        visibility .85s;
+      scrollbar-width: thin;
+      scrollbar-color: #d0bb93 transparent;
+    }
+
+    .invitation::before {
+      content: "";
+      position: absolute;
+      inset: 9px;
+      border: 1px solid #d9c79f;
+      pointer-events: none;
+    }
+
+    .invitation::after {
+      content: "✦";
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: var(--gold);
+      font-size: 12px;
+    }
+
+    .ornament {
+      position: relative;
+      color: var(--gold);
+      letter-spacing: .38em;
+      font-size: 15px;
+    }
+
+    .ornament-top {
+      margin-bottom: 18px;
+    }
+
+    .kicker {
+      margin: 0;
+      color: var(--blue-dark);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: .14em;
+      line-height: 1.9;
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      width: 82%;
+      margin: 15px auto;
+      color: var(--gold);
+      font-size: 12px;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold));
+    }
+
+    .divider::after {
+      transform: rotate(180deg);
+    }
+
+    h1 {
+      margin: 0;
+      color: var(--blue-dark);
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-size: clamp(35px, 10vw, 49px);
+      font-weight: 600;
+      line-height: 1.07;
+      letter-spacing: -.025em;
+    }
+
+    /* С. үсэг нэртэйгээ ижил хэмжээ, өнгөтэй */
+
+    .initial {
+      color: inherit;
+      font-size: 1em;
+    }
+
+    h2 {
+      margin: 8px 0 0;
+      color: #7392aa;
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-size: clamp(23px, 6.2vw, 29px);
+      font-weight: 500;
+      line-height: 1.2;
+    }
+
+    .toy-decoration {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 17px;
+      margin: 17px auto 15px;
+      color: var(--gold);
+    }
+
+    .toy-star {
+      font-size: 15px;
+      animation: twinkle 3.2s ease-in-out infinite;
+    }
+
+    .toy-medallion {
+      display: grid;
+      place-items: center;
+      width: 49px;
+      height: 49px;
+      border: 1px solid #dac69b;
+      outline: 3px solid #dac69b20;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #fcf6e9, #f0e4cc);
+      color: #9c8966;
+      font-size: 22px;
+      box-shadow: inset 0 0 0 4px #ffffff80;
+    }
+
+    .message {
+      max-width: 340px;
+      margin: 0 auto 22px;
+      color: #566b7a;
+      font-size: 12px;
+      line-height: 2.05;
+    }
+
+    .details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-top: 1px solid #e5d8bd;
+      border-bottom: 1px solid #e5d8bd;
+      padding: 18px 0;
+      gap: 0;
+    }
+
+    .detail {
+      display: flex;
+      min-width: 0;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 0 8px;
+    }
+
+    .detail + .detail {
+      border-left: 1px solid #e5d8bd;
+    }
+
+    .detail-icon {
+      color: var(--gold);
+      font-size: 19px;
+      line-height: 1;
+    }
+
+    .detail-label {
+      color: #a28e69;
+      font-size: 8px;
+      letter-spacing: .18em;
+    }
+
+    .detail strong {
+      color: var(--blue-dark);
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1.8;
+    }
+
+    .detail-note {
+      color: #8c969b;
+      font-size: 9px;
+      line-height: 1.7;
+    }
+
+    .signature-line {
+      width: 35px;
+      height: 1px;
+      margin: 19px auto 10px;
+      background: var(--gold);
+    }
+
+    .signature {
+      margin: 0;
+      color: #7c8b94;
+      font-size: 10px;
+      line-height: 1.9;
+    }
+
+    .signature strong {
+      color: var(--blue-dark);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .ornament-bottom {
+      margin-top: 18px;
+      font-size: 16px;
+    }
+
+    .replay {
+      margin-top: 19px;
+      padding: 9px 15px;
+      color: #71879a;
+      background: transparent;
+      border: 1px solid #cbb78d;
+      font-size: 10px;
+      cursor: pointer;
+      transition: background .25s ease, color .25s ease;
+    }
+
+    .replay:hover {
+      color: var(--blue-dark);
+      background: #f5eddd;
+    }
+
+    /* Нээгдэх хөдөлгөөн */
+
+    body.opening .env-flap {
+      transform: rotateX(180deg);
+    }
+
+    body.opening .seal-button {
+      animation: sealBreak .7s cubic-bezier(.2,.7,.2,1) forwards;
+      pointer-events: none;
+    }
+
+    body.opening .env-paper {
+      transform: translateY(-90px);
+    }
+
+    body.opened .intro {
+      opacity: 0;
+      transform: translateY(-24px) scale(.96);
+      pointer-events: none;
+    }
+
+    body.opened .invitation {
+      visibility: visible;
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+      transition-delay: .08s;
+    }
+
+    .spark-burst {
+      position: fixed;
+      z-index: 30;
+      width: 5px;
+      height: 5px;
+      color: #f2d9a0;
+      font-size: 15px;
+      pointer-events: none;
+      animation: burst .9s ease-out forwards;
+    }
+
+    @keyframes sealBreak {
+      0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1) rotate(0);
+      }
+      35% {
+        opacity: 1;
+        transform: translate(-50%, -65%) scale(1.12) rotate(-8deg);
+      }
+      100% {
+        opacity: 0;
+        transform: translate(15%, -180%) scale(.45) rotate(35deg);
+        filter: blur(4px);
+      }
+    }
+
+    @keyframes twinkle {
+      0%, 100% {
+        opacity: .38;
+        transform: translateY(0) rotate(0);
+      }
+      50% {
+        opacity: 1;
+        transform: translateY(-4px) rotate(12deg);
+      }
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        opacity: .45;
+        transform: scale(.85);
+      }
+      50% {
+        opacity: 1;
+        transform: scale(1.25);
+      }
+    }
+
+    @keyframes burst {
+      0% {
+        opacity: 0;
+        transform: translate(0, 0) scale(.3) rotate(0);
+      }
+      15% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0;
+        transform: translate(var(--dx), var(--dy)) scale(1.2) rotate(180deg);
+      }
+    }
+
+    @media (max-width: 380px) {
+      .scene {
+        padding: 25px 12px;
+      }
+
+      .envelope-wrap {
+        height: 275px;
+      }
+
+      .envelope {
+        height: 190px;
+      }
+
+      .seal-button {
+        width: 98px;
+        height: 98px;
+        font-size: 11px;
+      }
+
+      .invitation {
+        width: calc(100% - 26px);
+        padding: 33px 20px 23px;
+      }
+
+      .message {
+        font-size: 11px;
+      }
+
+      .detail strong {
+        font-size: 10px;
+      }
+    }
+
+    @media (max-height: 740px) {
+      .scene {
+        padding-top: 20px;
+        padding-bottom: 20px;
+      }
+
+      .envelope-wrap {
+        height: 250px;
+        margin-top: 12px;
+      }
+
+      .envelope {
+        height: 178px;
+        bottom: 27px;
+      }
+
+      .cover-signature {
+        margin-top: 23px;
+      }
+
+      .invitation {
+        padding-top: 29px;
+        padding-bottom: 22px;
+      }
+
+      .ornament-top {
+        margin-bottom: 12px;
+      }
+
+      .toy-decoration {
+        margin: 11px auto;
+      }
+
+      .message {
+        margin-bottom: 15px;
+      }
+
+      .details {
+        padding: 13px 0;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+      }
+    }
+  </style>
 </head>
+
 <body>
   <main class="scene">
     <div class="ambient ambient-one" aria-hidden="true"></div>
     <div class="ambient ambient-two" aria-hidden="true"></div>
-    <div class="tiny-star star-one" aria-hidden="true">✦</div>
-    <div class="tiny-star star-two" aria-hidden="true">✧</div>
-    <div class="tiny-star star-three" aria-hidden="true">✦</div>
+    <div class="ambient ambient-three" aria-hidden="true"></div>
 
-    <section class="cover" id="cover" aria-label="Урилгын дугтуй">
-      <p class="eyebrow">ТАНД УРИЛГА ИРСЭН БАЙНА</p>
-      <p class="cover-note">Бяцхан баярт мөчийг хамтдаа тэмдэглэцгээе</p>
+    <div class="stars" aria-hidden="true">
+      <span class="star">✦</span>
+      <span class="star">✧</span>
+      <span class="star">✦</span>
+      <span class="star">✧</span>
+      <span class="star">✦</span>
+      <span class="star">·</span>
+    </div>
 
-      <div class="envelope-wrap" id="envelopeWrap">
+    <!-- Дугтуйтай эхлэл -->
+    <section class="intro" id="intro">
+      <p class="overline">ТАНД УРИЛГА ИРСЭН БАЙНА</p>
+
+      <p class="intro-description">
+        Нандин дурсамж бүтээх нэгэн онцгой өдөр
+      </p>
+
+      <div class="mini-rule"></div>
+
+      <div class="envelope-wrap">
         <div class="envelope-shadow"></div>
-        <div class="letter-preview" id="letterPreview" aria-hidden="true">
-          <span class="preview-sparkle">✧</span>
-          <span class="preview-name">Тэмүгэ</span>
-          <span class="preview-sub">1 насны төрсөн өдөр</span>
-        </div>
+
         <div class="envelope">
-          <div class="envelope-back"></div>
-          <div class="envelope-paper"></div>
-          <div class="envelope-left"></div>
-          <div class="envelope-right"></div>
-          <div class="envelope-bottom"></div>
-          <div class="envelope-flap" id="envelopeFlap"></div>
-          <button class="wax-seal" id="openInvitation" type="button" aria-label="Урилга нээх">
+          <div class="env-back"></div>
+
+          <div class="env-paper">
+            <div class="env-paper-ornament">✦　✧　✦</div>
+            <div class="env-paper-title">Тэмүгэ</div>
+            <div class="env-paper-subtitle">
+              1 НАСНЫ ТӨРСӨН ӨДӨР
+            </div>
+          </div>
+
+          <div class="env-side-left"></div>
+          <div class="env-side-right"></div>
+          <div class="env-front"></div>
+          <div class="env-flap"></div>
+
+          <button
+            class="seal-button"
+            id="openInvitation"
+            type="button"
+            aria-label="Урилга нээх"
+          >
             <span>УРЬЛГА</span>
             <span>НЭЭХ</span>
           </button>
         </div>
       </div>
 
-      <p class="tap-hint" id="tapHint"><span class="hint-dot"></span> Лац дээр дарж урилгаа нээнэ үү</p>
-      <p class="cover-footer">С. ТЭМҮГЭГИЙН ГЭР БҮЛ</p>
+      <p class="seal-help">
+        <span class="pulse-dot"></span>
+        Лац дээр дарж урилгаа нээнэ үү
+      </p>
+
+      <p class="cover-signature">С. ТЭМҮГЭГИЙН ГЭР БҮЛ</p>
     </section>
 
-    <section class="invitation" id="invitation" aria-hidden="true">
-      <div class="paper-ornament ornament-top" aria-hidden="true">✦　✧　✦</div>
-      <p class="invitation-kicker">ХҮНДЭТ ТАНАЙ ГЭР БҮЛД</p>
-      <div class="gold-line"><span>✧</span></div>
-      <p class="small-intro">Бидний амьдралын хамгийн нандин баяр</p>
+    <!-- Үндсэн урилга -->
+    <article
+      class="invitation"
+      id="invitation"
+      aria-hidden="true"
+    >
+      <div class="ornament ornament-top" aria-hidden="true">
+        ✦　✧　✦
+      </div>
+
+      <p class="kicker">
+        ЭРХЭМ ХҮНДЭТ ТАНАЙ ГЭР БҮЛД
+      </p>
+
+      <div class="divider">✧</div>
+
       <h1><span class="initial">С.</span> Тэмүгэгийн</h1>
       <h2>1 насны төрсөн өдөр</h2>
-      <div class="teddy" aria-hidden="true">
-        <span class="teddy-star">✧</span>
-        <span class="teddy-face">♧</span>
-        <span class="teddy-star">✦</span>
+
+      <div class="toy-decoration" aria-hidden="true">
+        <span class="toy-star">✧</span>
+        <span class="toy-medallion">♧</span>
+        <span class="toy-star">✦</span>
       </div>
-      <p class="invitation-message">
-        Бяцхан Тэмүгэгийнхээ анхны төрсөн өдрийн баярт хүрэлцэн ирж,
-        бидний баяр хөөрийг хуваалцахыг урьж байна.
+
+      <p class="message">
+        Бяцхан Тэмүгэгийнхээ нэг насны баярыг хамтдаа
+        тэмдэглэж, бидний баяр хөөрийг хуваалцахаар
+        хүрэлцэн ирэхийг урьж байна.
       </p>
-      <div class="event-details">
-        <div class="detail-item">
+
+      <div class="details">
+        <div class="detail">
           <span class="detail-icon">✧</span>
           <span class="detail-label">ОГНОО</span>
           <strong>2026 оны 11-р сарын 6</strong>
         </div>
-        <div class="detail-divider"></div>
-        <div class="detail-item">
+
+        <div class="detail">
           <span class="detail-icon">⌖</span>
           <span class="detail-label">БАЙРШИЛ</span>
           <strong>Дархан хот</strong>
-          <span class="detail-note">Цаг, хаягийг удахгүй зарлана</span>
+          <span class="detail-note">
+            Цаг, хаягийг удахгүй зарлана
+          </span>
         </div>
       </div>
-      <p class="closing">Хүрэлцэн ирэхийг урьж байна</p>
-      <div class="signature-rule"></div>
-      <p class="signature">Хүндэтгэсэн,<br><strong>Тэмүгэгийн гэр бүл</strong></p>
-      <div class="paper-ornament ornament-bottom" aria-hidden="true">✧　❦　✧</div>
-      <button class="replay-button" id="replayInvitation" type="button">Дугтуйг дахин харах</button>
-    </section>
+
+      <div class="signature-line"></div>
+
+      <p class="signature">
+        Хүндэтгэсэн,<br>
+        <strong>Тэмүгэгийн гэр бүл</strong>
+      </p>
+
+      <div class="ornament ornament-bottom" aria-hidden="true">
+        ✧　❦　✧
+      </div>
+
+      <button class="replay" id="replayInvitation" type="button">
+        Дугтуйг дахин харах
+      </button>
+    </article>
   </main>
+
+  <script>
+    (() => {
+      const openButton = document.getElementById("openInvitation");
+      const replayButton = document.getElementById("replayInvitation");
+      const invitation = document.getElementById("invitation");
+
+      let isOpening = false;
+      let openTimer;
+
+      function createSparkles() {
+        const symbols = ["✦", "✧", "·", "✧", "✦"];
+
+        for (let i = 0; i < 20; i++) {
+          const spark = document.createElement("span");
+          spark.className = "spark-burst";
+          spark.textContent = symbols[i % symbols.length];
+
+          const angle = (Math.PI * 2 * i) / 20;
+          const distance = 75 + Math.random() * 130;
+
+          spark.style.setProperty("--dx", `${Math.cos(angle) * distance}px`);
+          spark.style.setProperty("--dy", `${Math.sin(angle) * distance}px`);
+          spark.style.left = `${window.innerWidth / 2}px`;
+          spark.style.top = `${window.innerHeight / 2}px`;
+          spark.style.animationDelay = `${Math.random() * 0.12}s`;
+
+          document.body.appendChild(spark);
+          window.setTimeout(() => spark.remove(), 1200);
+        }
+      }
+
+      function openInvitation() {
+        if (isOpening || document.body.classList.contains("opened")) return;
+        isOpening = true;
+
+        document.body.classList.add("opening");
+        invitation.setAttribute("aria-hidden", "false");
+
+        createSparkles();
+
+        openTimer = window.setTimeout(() => {
+          document.body.classList.add("opened");
+          isOpening = false;
+        }, 680);
+      }
+
+      function replayInvitation() {
+        window.clearTimeout(openTimer);
+        document.body.classList.remove("opened", "opening");
+        invitation.setAttribute("aria-hidden", "true");
+        isOpening = false;
+      }
+
+      openButton.addEventListener("click", openInvitation);
+      replayButton.addEventListener("click", replayInvitation);
+    })();
+  </script>
 </body>
 </html>
