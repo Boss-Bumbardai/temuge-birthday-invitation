@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="mn">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f0e6">
+  <meta name="description" content="С. Тэмүгэгийн 1 насны төрсөн өдрийн урилга">
+  <title>Тэмүгэгийн 1 насны төрсөн өдөр</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <main class="scene">
+    <div class="ambient ambient-one" aria-hidden="true"></div>
+    <div class="ambient ambient-two" aria-hidden="true"></div>
+    <div class="tiny-star star-one" aria-hidden="true">✦</div>
+    <div class="tiny-star star-two" aria-hidden="true">✧</div>
+    <div class="tiny-star star-three" aria-hidden="true">✦</div>
+
+    <section class="cover" id="cover" aria-label="Урилгын дугтуй">
+      <p class="eyebrow">ТАНД УРИЛГА ИРСЭН БАЙНА</p>
+      <p class="cover-note">Бяцхан баярт мөчийг хамтдаа тэмдэглэцгээе</p>
+
+      <div class="envelope-wrap" id="envelopeWrap">
+        <div class="envelope-shadow"></div>
+        <div class="letter-preview" id="letterPreview" aria-hidden="true">
+          <span class="preview-sparkle">✧</span>
+          <span class="preview-name">Тэмүгэ</span>
+          <span class="preview-sub">1 насны төрсөн өдөр</span>
+        </div>
+        <div class="envelope">
+          <div class="envelope-back"></div>
+          <div class="envelope-paper"></div>
+          <div class="envelope-left"></div>
+          <div class="envelope-right"></div>
+          <div class="envelope-bottom"></div>
+          <div class="envelope-flap" id="envelopeFlap"></div>
+          <button class="wax-seal" id="openInvitation" type="button" aria-label="Урилга нээх">
+            <span>УРЬЛГА</span>
+            <span>НЭЭХ</span>
+          </button>
+        </div>
+      </div>
+
+      <p class="tap-hint" id="tapHint"><span class="hint-dot"></span> Лац дээр дарж урилгаа нээнэ үү</p>
+      <p class="cover-footer">С. ТЭМҮГЭГИЙН ГЭР БҮЛ</p>
+    </section>
+
+    <section class="invitation" id="invitation" aria-hidden="true">
+      <div class="paper-ornament ornament-top" aria-hidden="true">✦　✧　✦</div>
+      <p class="invitation-kicker">ХҮНДЭТ ТАНАЙ ГЭР БҮЛД</p>
+      <div class="gold-line"><span>✧</span></div>
+      <p class="small-intro">Бидний амьдралын хамгийн нандин баяр</p>
+      <h1><span class="initial">С.</span> Тэмүгэгийн</h1>
+      <h2>1 насны төрсөн өдөр</h2>
+      <div class="teddy" aria-hidden="true">
+        <span class="teddy-star">✧</span>
+        <span class="teddy-face">♧</span>
+        <span class="teddy-star">✦</span>
+      </div>
+      <p class="invitation-message">
+        Бяцхан Тэмүгэгийнхээ анхны төрсөн өдрийн баярт хүрэлцэн ирж,
+        бидний баяр хөөрийг хуваалцахыг урьж байна.
+      </p>
+      <div class="event-details">
+        <div class="detail-item">
+          <span class="detail-icon">✧</span>
+          <span class="detail-label">ОГНОО</span>
+          <strong>2026 оны 11-р сарын 6</strong>
+        </div>
+        <div class="detail-divider"></div>
+        <div class="detail-item">
+          <span class="detail-icon">⌖</span>
+          <span class="detail-label">БАЙРШИЛ</span>
+          <strong>Дархан хот</strong>
+          <span class="detail-note">Цаг, хаягийг удахгүй зарлана</span>
+        </div>
+      </div>
+      <p class="closing">Хүрэлцэн ирэхийг урьж байна</p>
+      <div class="signature-rule"></div>
+      <p class="signature">Хүндэтгэсэн,<br><strong>Тэмүгэгийн гэр бүл</strong></p>
+      <div class="paper-ornament ornament-bottom" aria-hidden="true">✧　❦　✧</div>
+      <button class="replay-button" id="replayInvitation" type="button">Дугтуйг дахин харах</button>
+    </section>
+  </main>
+</body>
+</html>
