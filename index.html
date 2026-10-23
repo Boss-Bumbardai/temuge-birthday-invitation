@@ -937,40 +937,16 @@ h2,
     console.error("Дууны файл ачаалж чадсангүй:", music.currentSrc, music.error);
   });
 
-  // Сайтаас өөр tab/app руу шилжихэд дууг зогсооно.
-  // Сайт руу буцаж ирвэл урилга нээлттэй, дуу асаалттай үед үргэлжлүүлнэ.
-  let wasPlayingBeforeHide = false;
+  // Сайтнаас гарах/өөр tab руу шилжихэд дууг зогсооно.
+  // Буцаж ирэхэд автоматаар асаахгүй; урилгын нээх товчоор эхлүүлнэ.
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
-      wasPlayingBeforeHide = !music.paused && musicEnabled;
       music.pause();
       music.muted = true;
-    } else if (
-      wasPlayingBeforeHide &&
-      musicEnabled &&
-      document.body.classList.contains("opened")
-    ) {
-      wasPlayingBeforeHide = false;
-      music.muted = false;
-      const targetVolume = Number(musicVolume.value) / 100;
-      music.volume = 0;
-      music.play().then(() => {
-        const startedAt = performance.now();
-        const fade = (now) => {
-          if (document.hidden || !musicEnabled || music.paused) return;
-          const progress = Math.min(1, (now - startedAt) / 1200);
-          music.volume = targetVolume * progress;
-          if (progress < 1) requestAnimationFrame(fade);
-        };
-        requestAnimationFrame(fade);
-      }).catch(error => {
-        console.warn("Сайт руу буцаж ирэхэд дууг автоматаар үргэлжлүүлэх боломжгүй:", error);
-      });
     }
   });
 
   window.addEventListener("pagehide", () => {
-    wasPlayingBeforeHide = false;
     music.pause();
     music.muted = true;
   });
@@ -1000,19 +976,22 @@ h2,
 
   updateMusicControls();
 
-  // Гар утасны browser тоглуулах зөвшөөрлийг хэрэглэгчийн товшилтын үеэр авахын тулд
-  // эхлээд mute горимоор play() хийнэ. Дараа нь 53 секунд рүү шилжүүлж, аажмаар чангаруулна.
+  // Урилга нээх товчийг дарах бүрд дууг яг 53 секундээс эхлүүлнэ.
+  // Эхлээд товшилтын үеэр muted play() эхлүүлж, seek дуусмагц аажмаар чангаруулна.
   function startMusicAt53() {
     if (!musicEnabled) return;
 
     musicStartPending = true;
     musicSeekPending = true;
     music.pause();
+    music.currentTime = 0;
     music.volume = 0;
     music.muted = true;
 
+    let seekHandled = false;
     const finishSeek = () => {
-      if (!musicSeekPending || !musicEnabled) return;
+      if (seekHandled || !musicSeekPending || !musicEnabled) return;
+      seekHandled = true;
       musicSeekPending = false;
       musicStartPending = false;
       music.muted = false;
@@ -1020,8 +999,9 @@ h2,
       const fadeDuration = 3500;
       const fadeStartedAt = performance.now();
       const targetVolume = Number(musicVolume.value) / 100;
+      music.volume = 0;
       const fadeIn = (now) => {
-        if (!musicEnabled || music.paused) return;
+        if (!musicEnabled || music.paused || document.hidden) return;
         const progress = Math.min(1, (now - fadeStartedAt) / fadeDuration);
         music.volume = targetVolume * progress;
         if (progress < 1) requestAnimationFrame(fadeIn);
@@ -1031,36 +1011,38 @@ h2,
 
     const seekTo53 = () => {
       if (!musicStartPending || !musicEnabled) return;
-      if (!Number.isFinite(music.duration) || music.duration <= 0) {
-        console.error('Дууны хугацааг уншиж чадсангүй:', music.currentSrc);
+      if (!Number.isFinite(music.duration) || music.duration <= 53) {
+        console.error("Дууны файл 53 секундээс урт байх ёстой:", music.duration, music.currentSrc);
         musicStartPending = false;
         musicSeekPending = false;
+        music.pause();
         return;
       }
-      if (music.duration <= 53) {
-        console.error('Дуу 53 секундээс богино байна:', music.duration);
-        musicStartPending = false;
-        musicSeekPending = false;
-        return;
+
+      music.addEventListener("seeked", finishSeek, { once: true });
+      try {
+        music.currentTime = 53;
+        // Зарим браузер currentTime аль хэдийн 53 дээр байвал seeked өгөхгүй байж болно.
+        if (Math.abs(music.currentTime - 53) < 0.15) finishSeek();
+      } catch (error) {
+        console.error("Дууг 53 секунд рүү шилжүүлж чадсангүй:", error);
       }
-      // seeked listener-ийг currentTime өөрчлөхөөс өмнө бүртгэнэ.
-      music.addEventListener('seeked', finishSeek, { once: true });
-      music.currentTime = 53;
     };
 
-    // Энэ play() нь шууд хэрэглэгчийн товшилтын үед дуудагддаг тул iPhone/Android дээр
-    // autoplay хоригт өртөх магадлал бага. Mute тул seek хийх хүртэл сонсогдохгүй.
+    // Play-г хэрэглэгчийн товшилтын шууд үед эхлүүлж гар утасны autoplay хязгаарлалтыг давна.
     const playPromise = music.play();
-    if (playPromise && typeof playPromise.catch === 'function') {
+    if (playPromise && typeof playPromise.catch === "function") {
       playPromise.catch(error => {
-        console.error('Гар утас дуу тоглуулахыг хориглолоо:', error);
+        console.error("Дуу тоглуулах боломжгүй:", error);
+        musicStartPending = false;
+        musicSeekPending = false;
       });
     }
 
     if (music.readyState >= HTMLMediaElement.HAVE_METADATA) {
       seekTo53();
     } else {
-      music.addEventListener('loadedmetadata', seekTo53, { once: true });
+      music.addEventListener("loadedmetadata", seekTo53, { once: true });
     }
   }
 
