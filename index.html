@@ -976,8 +976,9 @@ h2,
 
   updateMusicControls();
 
-  // Урилга нээх товч дарахад дууг 53 секундээс эхлүүлнэ.
-  // Эхлээд хэрэглэгчийн товшилтын үеэр muted play() эхлүүлж, seek дууссаны дараа дууг нээнэ.
+  // Урилга нээх товчийг дарах үед playback-ийг шууд эхлүүлж,
+  // metadata бэлэн болмогц 53 секунд рүү шилжүүлнэ. Seek-ийн дараа play()-г
+  // дахин дуудахгүй тул утасны browser дээр эхлээд тоглоод зогсох асуудлыг багасгана.
   function startMusicAt53() {
     if (!musicEnabled) return;
 
@@ -987,57 +988,44 @@ h2,
     music.muted = true;
     music.volume = 0;
 
-    let seekHandled = false;
+    let finished = false;
     let metadataHandled = false;
+    let fadeFrame = 0;
 
-    const cleanupSeekListeners = () => {
-      music.removeEventListener('seeked', onSeeked);
+    const cleanup = () => {
       music.removeEventListener('loadedmetadata', onMetadata);
+      music.removeEventListener('seeked', onSeeked);
+      music.removeEventListener('timeupdate', checkSeekPosition);
     };
 
-    const fadeInAfterSeek = () => {
-      if (seekHandled || !musicEnabled || document.hidden) return;
-      seekHandled = true;
-      musicSeekPending = false;
+    const startFade = () => {
+      if (finished || !musicEnabled) return;
+      // Зарим mobile browser seeked event алгасдаг тул бодит currentTime-ийг шалгана.
+      if (Math.abs(music.currentTime - 53) > 1.5) return;
+      finished = true;
       musicStartPending = false;
-      cleanupSeekListeners();
+      musicSeekPending = false;
+      cleanup();
 
-      // Seek-ийн дараа зарим гар утасны browser playback-ийг түр pause хийдэг.
-      const beginFade = () => {
+      music.muted = false;
+      const targetVolume = Number(musicVolume.value) / 100;
+      const fadeDuration = 3500;
+      const fadeStartedAt = performance.now();
+      music.volume = 0;
+
+      const fadeIn = (now) => {
         if (!musicEnabled || document.hidden) return;
-        music.muted = false;
-        const targetVolume = Number(musicVolume.value) / 100;
-        const fadeDuration = 3500;
-        const fadeStartedAt = performance.now();
-        music.volume = 0;
-
-        const fadeIn = (now) => {
-          if (!musicEnabled || music.paused || document.hidden) return;
-          const progress = Math.min(1, (now - fadeStartedAt) / fadeDuration);
-          music.volume = targetVolume * progress;
-          if (progress < 1) requestAnimationFrame(fadeIn);
-        };
-        requestAnimationFrame(fadeIn);
+        // Хэрэв browser playback-ийг өөрөө pause хийгээгүй бол үргэлжлүүлэн fade хийнэ.
+        const progress = Math.min(1, (now - fadeStartedAt) / fadeDuration);
+        music.volume = targetVolume * progress;
+        if (progress < 1) fadeFrame = requestAnimationFrame(fadeIn);
       };
-
-      if (music.paused) {
-        const resume = music.play();
-        if (resume && typeof resume.then === 'function') {
-          resume.then(beginFade).catch(error => {
-            console.error('Дууг seek хийсний дараа үргэлжлүүлж чадсангүй:', error);
-            music.muted = true;
-          });
-        } else {
-          beginFade();
-        }
-      } else {
-        beginFade();
-      }
+      cancelAnimationFrame(fadeFrame);
+      fadeFrame = requestAnimationFrame(fadeIn);
     };
 
-    function onSeeked() {
-      if (Math.abs(music.currentTime - 53) < 1.5) fadeInAfterSeek();
-    }
+    function onSeeked() { startFade(); }
+    function checkSeekPosition() { startFade(); }
 
     function onMetadata() {
       if (metadataHandled || !musicStartPending || !musicEnabled) return;
@@ -1046,33 +1034,37 @@ h2,
         console.error('Дууны файл 53 секундээс урт байх ёстой:', music.duration, music.currentSrc);
         musicStartPending = false;
         musicSeekPending = false;
-        cleanupSeekListeners();
+        cleanup();
         music.pause();
         return;
       }
-      music.addEventListener('seeked', onSeeked);
+
       try {
+        music.addEventListener('seeked', onSeeked);
+        music.addEventListener('timeupdate', checkSeekPosition);
         music.currentTime = 53;
+        // Зарим файл/браузер seeked-г хурдан өгөх эсвэл одоогийн байрлалд байж болно.
+        if (Math.abs(music.currentTime - 53) < 0.25) startFade();
       } catch (error) {
         console.error('Дууг 53 секунд рүү шилжүүлж чадсангүй:', error);
         musicStartPending = false;
         musicSeekPending = false;
-        cleanupSeekListeners();
+        cleanup();
         music.pause();
       }
     }
 
     music.addEventListener('loadedmetadata', onMetadata);
-    music.addEventListener('seeked', onSeeked);
 
-    // Энэ play() нь шууд товшилтын үеэр дуудагдаж, гар утасны browser-д тоглуулах эрх хүснэ.
+    // play() нь хэрэглэгчийн товшилтын үеэр шууд дуудагдана.
+    // Эхлээд muted тоглож эхлээд, 53 секундэд хүрсний дараа fade-in хийнэ.
     const playPromise = music.play();
     if (playPromise && typeof playPromise.catch === 'function') {
       playPromise.catch(error => {
         console.error('Дуу тоглуулах боломжгүй:', error);
         musicStartPending = false;
         musicSeekPending = false;
-        cleanupSeekListeners();
+        cleanup();
       });
     }
 
