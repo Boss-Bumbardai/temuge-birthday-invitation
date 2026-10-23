@@ -327,7 +327,7 @@ button:focus-visible {
   width: min(calc(100% - 28px), 460px);
   max-height: calc(100svh - 28px);
   overflow: auto;
-  padding: 32px 24px 24px;
+  padding: 32px 24px 92px;
   border: 1px solid #cfb77f;
   color: var(--blue);
   text-align: center;
@@ -510,38 +510,49 @@ h2 {
 }
 
 .music-controls {
+  position: fixed;
+  z-index: 50;
+  left: 50%;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 10px 12px;
-  margin: 16px auto 4px;
-  padding: 11px 13px;
-  max-width: 310px;
-  border: 1px solid #e5d8bd;
-  border-radius: 8px;
-  background: #f8f3e9;
+  width: min(calc(100% - 28px), 340px);
+  padding: 10px 14px;
+  border: 1px solid #d7c59f;
+  border-radius: 999px;
+  background: rgba(255, 253, 248, .96);
+  box-shadow: 0 8px 28px #0003;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .25s ease, visibility .25s ease;
 }
 
-.music-toggle {
-  padding: 8px 12px;
-  border: 1px solid #cbb78d;
-  border-radius: 5px;
-  color: #294c6d;
-  background: #fffdf8;
-  font-size: 12px;
+body.opened .music-controls {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
 }
 
 .volume-control {
   display: flex;
   align-items: center;
-  gap: 7px;
-  color: #607c94;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  color: #294c6d;
   font-size: 12px;
+  white-space: nowrap;
 }
 
 .volume-control input {
-  width: 88px;
+  flex: 1;
+  min-width: 80px;
+  max-width: 210px;
   accent-color: #294c6d;
 }
 
@@ -764,7 +775,7 @@ h2,
 
 @media (max-width: 380px) {
   .invitation {
-    padding: 29px 17px 21px;
+    padding: 29px 17px 92px;
   }
 
   .baby {
@@ -898,8 +909,7 @@ h2,
     </div>
 
     <div class="music-controls" aria-label="Хөгжмийн тохиргоо">
-      <button class="music-toggle" id="musicToggle" type="button" aria-pressed="true">🔊 Дууг унтраах</button>
-      <label class="volume-control" for="musicVolume">Дууны хэмжээ
+      <label class="volume-control" for="musicVolume"><span>🔊 Дууны хэмжээ</span>
         <input id="musicVolume" type="range" min="0" max="100" value="12">
       </label>
     </div>
@@ -925,7 +935,6 @@ h2,
   music.volume = 0.12; // Анхдагч дууны хэмжээ 12%, зөөлөн эхэлнэ.
   music.muted = true; // 53 секунд рүү шилжих хүртэл эхний хэсэг сонсогдохгүй.
 
-  const musicToggle = document.getElementById("musicToggle");
   const musicVolume = document.getElementById("musicVolume");
   let musicEnabled = true;
   let isOpening = false;
@@ -951,30 +960,9 @@ h2,
     music.muted = true;
   });
 
-  function updateMusicControls() {
-    musicToggle.textContent = musicEnabled ? "🔊 Дууг унтраах" : "🔇 Дууг асаах";
-    musicToggle.setAttribute("aria-pressed", String(musicEnabled));
-    musicVolume.disabled = !musicEnabled;
-  }
-
   musicVolume.addEventListener("input", () => {
     music.volume = Number(musicVolume.value) / 100;
   });
-
-  musicToggle.addEventListener("click", () => {
-    musicEnabled = !musicEnabled;
-    if (!musicEnabled) {
-      music.muted = true;
-      music.pause();
-      musicStartPending = false;
-      musicSeekPending = false;
-    } else if (document.body.classList.contains("opened")) {
-      startMusicAt53();
-    }
-    updateMusicControls();
-  });
-
-  updateMusicControls();
 
   // Урилга нээх товшилтоор дууг тоглуулж, metadata бэлэн болмогц 53 секунд рүү шилжүүлнэ.
   // Seek дууссаны дараа тоглуулалтыг дахин эхлүүлэхгүй, зөвхөн дууг аажмаар нээнэ.
@@ -1022,14 +1010,28 @@ h2,
       const fadeStartedAt = performance.now();
       const fadeDuration = 3500;
 
-      const fadeIn = (now) => {
-        if (!musicEnabled || document.hidden || music.paused) return;
-        const progress = Math.min(1, (now - fadeStartedAt) / fadeDuration);
-        music.volume = targetVolume * progress;
-        if (progress < 1) fadeFrame = requestAnimationFrame(fadeIn);
+      // Зарим гар утас seek хийх үед playback-ийг өөрөө pause хийдэг.
+      // Тиймээс seek дууссаны дараа play()-г дахин дуудаж байж fade-in эхлүүлнэ.
+      const startFade = () => {
+        if (!musicEnabled || document.hidden) return;
+        const fadeIn = (now) => {
+          if (!musicEnabled || document.hidden || music.paused) return;
+          const progress = Math.min(1, (now - fadeStartedAt) / fadeDuration);
+          music.volume = targetVolume * progress;
+          if (progress < 1) fadeFrame = requestAnimationFrame(fadeIn);
+        };
+        cancelAnimationFrame(fadeFrame);
+        fadeFrame = requestAnimationFrame(fadeIn);
       };
-      cancelAnimationFrame(fadeFrame);
-      fadeFrame = requestAnimationFrame(fadeIn);
+
+      const resume = music.play();
+      if (resume && typeof resume.then === 'function') {
+        resume.then(startFade).catch(error => {
+          console.error('Seek-ийн дараа дууг үргэлжлүүлж чадсангүй:', error);
+        });
+      } else {
+        startFade();
+      }
     };
 
     function onSeeked() { beginFade(); }
