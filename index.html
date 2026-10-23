@@ -976,9 +976,8 @@ h2,
 
   updateMusicControls();
 
-  // Урилга нээх товчийг дарах үед playback-ийг шууд эхлүүлж,
-  // metadata бэлэн болмогц 53 секунд рүү шилжүүлнэ. Seek-ийн дараа play()-г
-  // дахин дуудахгүй тул утасны browser дээр эхлээд тоглоод зогсох асуудлыг багасгана.
+  // Урилга нээх товшилтоор дууг тоглуулж, metadata бэлэн болмогц 53 секунд рүү шилжүүлнэ.
+  // Seek дууссаны дараа тоглуулалтыг дахин эхлүүлэхгүй, зөвхөн дууг аажмаар нээнэ.
   function startMusicAt53() {
     if (!musicEnabled) return;
 
@@ -988,34 +987,43 @@ h2,
     music.muted = true;
     music.volume = 0;
 
-    let finished = false;
-    let metadataHandled = false;
+    let completed = false;
+    let seekFallbackTimer = null;
     let fadeFrame = 0;
 
     const cleanup = () => {
       music.removeEventListener('loadedmetadata', onMetadata);
       music.removeEventListener('seeked', onSeeked);
-      music.removeEventListener('timeupdate', checkSeekPosition);
+      music.removeEventListener('error', onError);
+      if (seekFallbackTimer !== null) clearTimeout(seekFallbackTimer);
     };
 
-    const startFade = () => {
-      if (finished || !musicEnabled) return;
-      // Зарим mobile browser seeked event алгасдаг тул бодит currentTime-ийг шалгана.
-      if (Math.abs(music.currentTime - 53) > 1.5) return;
-      finished = true;
+    const fail = (message, error) => {
+      if (completed) return;
+      completed = true;
+      musicStartPending = false;
+      musicSeekPending = false;
+      cleanup();
+      console.error(message, error || music.currentSrc, music.error || '');
+    };
+
+    const beginFade = () => {
+      if (completed || !musicEnabled) return;
+      // Browser seeked event зарим утсанд хоцордог тул бодит байрлалыг баталгаажуулна.
+      if (Math.abs(music.currentTime - 53) > 2) return;
+      completed = true;
       musicStartPending = false;
       musicSeekPending = false;
       cleanup();
 
       music.muted = false;
-      const targetVolume = Number(musicVolume.value) / 100;
-      const fadeDuration = 3500;
-      const fadeStartedAt = performance.now();
       music.volume = 0;
+      const targetVolume = Number(musicVolume.value) / 100;
+      const fadeStartedAt = performance.now();
+      const fadeDuration = 3500;
 
       const fadeIn = (now) => {
-        if (!musicEnabled || document.hidden) return;
-        // Хэрэв browser playback-ийг өөрөө pause хийгээгүй бол үргэлжлүүлэн fade хийнэ.
+        if (!musicEnabled || document.hidden || music.paused) return;
         const progress = Math.min(1, (now - fadeStartedAt) / fadeDuration);
         music.volume = targetVolume * progress;
         if (progress < 1) fadeFrame = requestAnimationFrame(fadeIn);
@@ -1024,48 +1032,37 @@ h2,
       fadeFrame = requestAnimationFrame(fadeIn);
     };
 
-    function onSeeked() { startFade(); }
-    function checkSeekPosition() { startFade(); }
+    function onSeeked() { beginFade(); }
+    function onError() { fail('Дууны файл ачаалж чадсангүй:', music.error); }
 
     function onMetadata() {
-      if (metadataHandled || !musicStartPending || !musicEnabled) return;
-      metadataHandled = true;
+      if (completed || !musicStartPending || !musicEnabled) return;
       if (!Number.isFinite(music.duration) || music.duration <= 53) {
-        console.error('Дууны файл 53 секундээс урт байх ёстой:', music.duration, music.currentSrc);
-        musicStartPending = false;
-        musicSeekPending = false;
-        cleanup();
-        music.pause();
+        fail('Дууны файл 53 секундээс урт байх ёстой. Хугацаа:', music.duration);
         return;
       }
 
+      music.addEventListener('seeked', onSeeked);
       try {
-        music.addEventListener('seeked', onSeeked);
-        music.addEventListener('timeupdate', checkSeekPosition);
         music.currentTime = 53;
-        // Зарим файл/браузер seeked-г хурдан өгөх эсвэл одоогийн байрлалд байж болно.
-        if (Math.abs(music.currentTime - 53) < 0.25) startFade();
+        // Зарим mobile browser seeked event явуулахгүй байж болно; бага зэрэг хүлээгээд шалгана.
+        seekFallbackTimer = setTimeout(() => {
+          if (Math.abs(music.currentTime - 53) <= 2) beginFade();
+          else fail('Дууг 53 секунд рүү шилжүүлж чадсангүй. Одоогийн байрлал:', music.currentTime);
+        }, 1200);
+        if (Math.abs(music.currentTime - 53) <= 0.25) beginFade();
       } catch (error) {
-        console.error('Дууг 53 секунд рүү шилжүүлж чадсангүй:', error);
-        musicStartPending = false;
-        musicSeekPending = false;
-        cleanup();
-        music.pause();
+        fail('Дууг 53 секунд рүү шилжүүлэхэд алдаа гарлаа:', error);
       }
     }
 
-    music.addEventListener('loadedmetadata', onMetadata);
+    music.addEventListener('loadedmetadata', onMetadata, { once: true });
+    music.addEventListener('error', onError, { once: true });
 
-    // play() нь хэрэглэгчийн товшилтын үеэр шууд дуудагдана.
-    // Эхлээд muted тоглож эхлээд, 53 секундэд хүрсний дараа fade-in хийнэ.
+    // play() товшилтын үйлдэлтэй шууд холбогдсон байна. Эхэндээ mute тул эхний 53 секунд сонсогдохгүй.
     const playPromise = music.play();
     if (playPromise && typeof playPromise.catch === 'function') {
-      playPromise.catch(error => {
-        console.error('Дуу тоглуулах боломжгүй:', error);
-        musicStartPending = false;
-        musicSeekPending = false;
-        cleanup();
-      });
+      playPromise.catch(error => fail('Browser дуу тоглуулахыг хориглолоо:', error));
     }
 
     if (music.readyState >= HTMLMediaElement.HAVE_METADATA) onMetadata();
