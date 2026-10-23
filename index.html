@@ -903,8 +903,8 @@ h2,
   const invitation = document.getElementById("invitation");
 
   const START_AT = 53;        // дууг эхлүүлэх секунд
-  const END_AT = 107;         // дууг зогсоох секунд (1:47)
-  const FADE_OUT = 3;         // дуусахын өмнөх зөөлөн сулрах хугацаа (секунд)
+  const END_AT = 105;         // дууг зогсоох секунд (1:45)
+  const FADE_OUT = 6;         // дуусахын өмнөх зөөлөн сулрах хугацаа (секунд)
   const MUSIC_VOLUME = 0.5;   // дууны хэмжээ (0-1)
 
   // temuge-song.mp3 файл index.html-тэй нэг үндсэн хавтсанд байна.
@@ -918,26 +918,33 @@ h2,
   let isOpening = false;
   let openTimer;
   let fadeTimer = null;
+  let endWatcher = null;
 
   music.addEventListener("error", () => {
     console.error("Дууны файл ачаалж чадсангүй:", music.currentSrc, music.error);
   });
 
-  // 1:47 дөхөхөд дуу сулрч, 1:47 дээр зогсоно.
-  music.addEventListener("timeupdate", () => {
-    const t = music.currentTime;
+  // 1:39-өөс дуу сулрч эхэлж, яг 1:45 дээр бүр мөсөн дуусч зогсоно.
+  // timeupdate утсан дээр ховор дуудагддаг тул 30 мс тутамд өөрөө шалгана.
+  function watchEnd() {
+    clearInterval(endWatcher);
+    endWatcher = setInterval(() => {
+      const t = music.currentTime;
 
-    if (t >= END_AT) {
-      stopMusic();
-      return;
-    }
+      if (t >= END_AT) {
+        stopMusic();
+        return;
+      }
 
-    if (t >= END_AT - FADE_OUT) {
-      clearInterval(fadeTimer);
-      fadeTimer = null;
-      music.volume = MUSIC_VOLUME * Math.max(0, (END_AT - t) / FADE_OUT);
-    }
-  });
+      if (t >= END_AT - FADE_OUT) {
+        clearInterval(fadeTimer);
+        fadeTimer = null;
+        music.volume = MUSIC_VOLUME * Math.max(0, (END_AT - t) / FADE_OUT);
+      }
+    }, 30);
+  }
+
+  music.addEventListener("playing", watchEnd);
 
   function updateMusicButton() {
     musicToggle.textContent = musicEnabled ? "🔊" : "🔇";
@@ -946,7 +953,9 @@ h2,
 
   function stopMusic() {
     clearInterval(fadeTimer);
+    clearInterval(endWatcher);
     fadeTimer = null;
+    endWatcher = null;
     music.pause();
   }
 
