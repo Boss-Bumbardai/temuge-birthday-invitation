@@ -327,7 +327,7 @@ button:focus-visible {
   width: min(calc(100% - 28px), 460px);
   max-height: calc(100svh - 28px);
   overflow: auto;
-  padding: 32px 24px 92px;
+  padding: 32px 24px 24px;
   border: 1px solid #cfb77f;
   color: var(--blue);
   text-align: center;
@@ -509,37 +509,29 @@ h2 {
   font-size: 19px;
 }
 
-.music-controls {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  margin: 16px auto 8px;
-  padding: 10px 12px;
-  border: 1px solid #d7c59f;
-  border-radius: 999px;
-  background: rgba(255, 253, 248, .98);
-  box-shadow: 0 5px 16px #00000012;
+/* Дууны товч (🔊 / 🔇) */
+
+.music-toggle {
+  position: fixed;
+  z-index: 25;
+  top: 24px;
+  right: 24px;
+  display: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid #cbb78d;
+  border-radius: 50%;
+  background: #fffdf8;
+  box-shadow: 0 4px 14px #0004;
+  font-size: 22px;
+  line-height: 1;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.volume-control {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  width: 100%;
-  color: #294c6d;
-  font-size: 12px;
-  white-space: nowrap;
-}
-
-.volume-control input {
-  flex: 1;
-  min-width: 80px;
-  max-width: 210px;
-  accent-color: #294c6d;
+body.opened .music-toggle {
+  display: grid;
 }
 
 .replay {
@@ -761,7 +753,7 @@ h2,
 
 @media (max-width: 380px) {
   .invitation {
-    padding: 29px 17px 92px;
+    padding: 29px 17px 21px;
   }
 
   .baby {
@@ -894,18 +886,14 @@ h2,
       </div>
     </div>
 
-    <div class="music-controls" aria-label="Хөгжмийн тохиргоо">
-      <label class="volume-control" for="musicVolume"><span>🔊 Дууны хэмжээ</span>
-        <input id="musicVolume" type="range" min="0" max="100" value="12">
-      </label>
-    </div>
-
     <div class="signature-line"></div>
     <p class="signature">Хүндэтгэсэн,<br><strong>Тэмүгэгийн гэр бүл</strong></p>
     <div class="ornament bottom-toys" aria-hidden="true">🧸　🚗　🪁</div>
 
     <button class="replay" id="replayInvitation" type="button">Дугтуйг дахин харах</button>
   </article>
+
+  <button class="music-toggle" id="musicToggle" type="button" aria-pressed="true" aria-label="Дуу асаах/унтраах">🔊</button>
 </main>
 
 <script>
@@ -914,123 +902,109 @@ h2,
   const replayButton = document.getElementById("replayInvitation");
   const invitation = document.getElementById("invitation");
 
+  const START_AT = 53;        // дууг эхлүүлэх секунд
+  const MUSIC_VOLUME = 0.5;   // дууны хэмжээ (0-1)
+
   // temuge-song.mp3 файл index.html-тэй нэг үндсэн хавтсанд байна.
   const music = new Audio(new URL("./temuge-song.mp3", document.baseURI).href);
   music.preload = "auto";
   music.loop = false;
-  music.volume = 0;
-  music.muted = true;
+  music.volume = MUSIC_VOLUME;
 
-  const musicVolume = document.getElementById("musicVolume");
-  // Урилга нээх анимацын төлөвүүд заавал зарлагдсан байх ёстой.
-  // Эдгээр байхгүй бол товч дарахад ReferenceError гарч, урилга нээгдэхгүй.
+  const musicToggle = document.getElementById("musicToggle");
+  let musicEnabled = true;
   let isOpening = false;
-  let openTimer = null;
-  let musicStartPending = false;
-  let fadeFrame = 0;
-  let fadeStarted = false;
+  let openTimer;
+  let fadeTimer = null;
 
   music.addEventListener("error", () => {
     console.error("Дууны файл ачаалж чадсангүй:", music.currentSrc, music.error);
   });
 
-  // Сайтнаас гарах эсвэл өөр tab/app руу шилжихэд дуу зогсоно.
+  function updateMusicButton() {
+    musicToggle.textContent = musicEnabled ? "🔊" : "🔇";
+    musicToggle.setAttribute("aria-pressed", String(musicEnabled));
+  }
+
+  function stopMusic() {
+    clearInterval(fadeTimer);
+    fadeTimer = null;
+    music.pause();
+  }
+
+  function fadeIn() {
+    clearInterval(fadeTimer);
+    const startedAt = Date.now();
+    const duration = 2500;
+    fadeTimer = setInterval(() => {
+      const p = Math.min(1, (Date.now() - startedAt) / duration);
+      music.volume = MUSIC_VOLUME * p;
+      if (p >= 1) {
+        clearInterval(fadeTimer);
+        fadeTimer = null;
+      }
+    }, 50);
+  }
+
+  // Дууг 53 секундээс шууд эхлүүлнэ. Заавал товшилтын үед дуудагдана.
+  function startMusicAt53() {
+    if (!musicEnabled) return;
+
+    // Эхлэх байрлалыг play()-ээс өмнө тохируулна.
+    try { music.currentTime = START_AT; } catch (e) {}
+
+    // Metadata дараа ачаалагдвал байрлалыг дахин баталгаажуулна.
+    const fixPosition = () => {
+      if (Number.isFinite(music.duration) && music.duration > START_AT &&
+          music.currentTime < START_AT - 1) {
+        try { music.currentTime = START_AT; } catch (e) {}
+      }
+    };
+    music.addEventListener("loadedmetadata", fixPosition, { once: true });
+    fixPosition();
+
+    music.volume = 0;
+    music.muted = false;
+    music.play().then(fadeIn).catch(error => {
+      console.error("Дуу тоглуулах боломжгүй:", error);
+    });
+  }
+
+  // Зогсоосон дууг тасалсан газраас нь үргэлжлүүлнэ.
+  function resumeMusic() {
+    if (!musicEnabled) return;
+    if (music.currentTime < START_AT - 1) {
+      startMusicAt53();
+      return;
+    }
+    music.volume = 0;
+    music.play().then(fadeIn).catch(error => {
+      console.error("Дуу тоглуулах боломжгүй:", error);
+    });
+  }
+
+  musicToggle.addEventListener("click", () => {
+    musicEnabled = !musicEnabled;
+    if (musicEnabled) {
+      resumeMusic();
+    } else {
+      stopMusic();
+    }
+    updateMusicButton();
+  });
+
+  // Өөр tab руу шилжихэд зогсоож, буцаж ирэхэд үргэлжлүүлнэ.
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
-      music.pause();
-      music.muted = true;
-      cancelAnimationFrame(fadeFrame);
+      stopMusic();
+    } else if (document.body.classList.contains("opened")) {
+      resumeMusic();
     }
   });
-  window.addEventListener("pagehide", () => {
-    music.pause();
-    music.muted = true;
-    cancelAnimationFrame(fadeFrame);
-  });
 
-  musicVolume.addEventListener("input", () => {
-    if (fadeStarted) music.volume = Number(musicVolume.value) / 100;
-  });
+  window.addEventListener("pagehide", stopMusic);
 
-  function startMusicAt53() {
-    // Дугтуйг дахин нээх үйлдэл дууг шинээр эхлүүлнэ.
-    musicStartPending = true;
-    fadeStarted = false;
-    cancelAnimationFrame(fadeFrame);
-    music.pause();
-    music.currentTime = 0;
-    music.muted = true;
-    music.volume = 0;
-
-    let done = false;
-    let fallbackTimer;
-
-    const clean = () => {
-      music.removeEventListener("loadedmetadata", onMetadata);
-      music.removeEventListener("seeked", onSeeked);
-      music.removeEventListener("playing", onPlaying);
-      if (fallbackTimer) clearTimeout(fallbackTimer);
-    };
-
-    const fail = (message, detail) => {
-      if (done) return;
-      done = true;
-      musicStartPending = false;
-      clean();
-      console.error(message, detail || music.currentSrc, music.error || "");
-    };
-
-    const fadeIn = () => {
-      if (done || !musicStartPending || document.hidden) return;
-      if (Math.abs(music.currentTime - 53) > 2) return;
-      done = true;
-      musicStartPending = false;
-      fadeStarted = true;
-      clean();
-      music.muted = false;
-      const target = Number(musicVolume.value) / 100;
-      const started = performance.now();
-      const step = now => {
-        if (document.hidden || music.paused) return;
-        const progress = Math.min(1, (now - started) / 3500);
-        music.volume = target * progress;
-        if (progress < 1) fadeFrame = requestAnimationFrame(step);
-      };
-      fadeFrame = requestAnimationFrame(step);
-    };
-
-    function onSeeked() { fadeIn(); }
-    function onPlaying() {
-      // Metadata/seek event зарим mobile browser дээр хоцорвол fallback нь currentTime шалгана.
-      if (Math.abs(music.currentTime - 53) <= 2) fadeIn();
-    }
-    function onMetadata() {
-      if (done || !musicStartPending) return;
-      if (!Number.isFinite(music.duration) || music.duration <= 53) {
-        fail("Дуу 53 секундээс урт байх ёстой. Дууны хугацаа:", music.duration);
-        return;
-      }
-      music.addEventListener("seeked", onSeeked);
-      music.addEventListener("playing", onPlaying);
-      try {
-        music.currentTime = 53;
-        fallbackTimer = setTimeout(() => {
-          if (Math.abs(music.currentTime - 53) <= 2) fadeIn();
-          else fail("53 секунд рүү шилжиж чадсангүй. Одоогийн байрлал:", music.currentTime);
-        }, 1500);
-      } catch (error) {
-        fail("Дууг 53 секунд рүү шилжүүлэхэд алдаа гарлаа:", error);
-      }
-    }
-
-    music.addEventListener("loadedmetadata", onMetadata);
-    // Чухал: play() нь хэрэглэгчийн товшилтын яг үеэр дуудагдана; seek-ийн дараа дахин play() дуудахгүй.
-    const promise = music.play();
-    if (promise && typeof promise.catch === "function") {
-      promise.catch(error => fail("Browser дуу тоглуулахыг хориглолоо:", error));
-    }
-    if (music.readyState >= HTMLMediaElement.HAVE_METADATA) onMetadata();
-  }
+  updateMusicButton();
 
   function createSparkles() {
     const symbols = ["✦", "✧", "·", "✧", "✦"];
@@ -1057,6 +1031,8 @@ h2,
     if (isOpening || document.body.classList.contains("opened")) return;
 
     isOpening = true;
+
+    // Заавал товшилтын үед шууд дуудна.
     startMusicAt53();
 
     document.body.classList.add("opening");
@@ -1071,9 +1047,7 @@ h2,
 
   function replayInvitation() {
     clearTimeout(openTimer);
-    musicStartPending = false;
-    music.muted = true;
-    music.pause();
+    stopMusic();
 
     document.body.classList.remove("opened", "opening");
     invitation.setAttribute("aria-hidden", "true");
