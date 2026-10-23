@@ -962,68 +962,67 @@ h2,
 
   updateMusicControls();
 
-  // Дууг эхлээд mute горимоор ачаалж, 53 секунд рүү seek хийсний дараа сонсогдуулна.
+  // Гар утасны browser тоглуулах зөвшөөрлийг хэрэглэгчийн товшилтын үеэр авахын тулд
+  // эхлээд mute горимоор play() хийнэ. Дараа нь 53 секунд рүү шилжүүлж, аажмаар чангаруулна.
   function startMusicAt53() {
     if (!musicEnabled) return;
+
     musicStartPending = true;
     musicSeekPending = true;
-    music.volume = Number(musicVolume.value) / 100;
+    music.pause();
+    music.volume = 0;
     music.muted = true;
-
-    const seekTo53 = () => {
-      if (!musicStartPending || !musicEnabled) return;
-      try {
-        if (!Number.isFinite(music.duration) || music.duration <= 0) {
-          console.warn("Дууны үргэлжлэх хугацааг уншиж чадсангүй.");
-          musicStartPending = false;
-          return;
-        }
-        if (music.duration <= 53) {
-          console.warn("Дуу 53 секундээс богино тул 53 дахь секунд рүү шилжих боломжгүй.");
-        }
-        const startAt = Math.min(53, Math.max(0, music.duration - 0.25));
-        music.currentTime = startAt;
-      } catch (error) {
-        console.warn("Дууны 53 секунд рүү шилжүүлэхэд алдаа гарлаа:", error);
-      }
-    };
 
     const finishSeek = () => {
       if (!musicSeekPending || !musicEnabled) return;
       musicSeekPending = false;
       musicStartPending = false;
-
-      // Дууг шууд чанга гаргахгүй: 0-ээс эхлээд 3.5 секундэд аажмаар нэмнэ.
-      music.volume = 0;
       music.muted = false;
-      music.play().then(() => {
-        const fadeDuration = 3500;
-        const fadeStartedAt = performance.now();
 
-        const fadeIn = (now) => {
-          if (!musicEnabled || music.paused) return;
-          const progress = Math.min(1, (now - fadeStartedAt) / fadeDuration);
-          const targetVolume = Number(musicVolume.value) / 100;
-          music.volume = targetVolume * progress;
-          if (progress < 1) requestAnimationFrame(fadeIn);
-        };
-
-        requestAnimationFrame(fadeIn);
-      }).catch(error => {
-        console.error("Дуу тоглуулах боломжгүй байна:", error);
-      });
+      const fadeDuration = 3500;
+      const fadeStartedAt = performance.now();
+      const targetVolume = Number(musicVolume.value) / 100;
+      const fadeIn = (now) => {
+        if (!musicEnabled || music.paused) return;
+        const progress = Math.min(1, (now - fadeStartedAt) / fadeDuration);
+        music.volume = targetVolume * progress;
+        if (progress < 1) requestAnimationFrame(fadeIn);
+      };
+      requestAnimationFrame(fadeIn);
     };
 
-    music.addEventListener("seeked", finishSeek, { once: true });
+    const seekTo53 = () => {
+      if (!musicStartPending || !musicEnabled) return;
+      if (!Number.isFinite(music.duration) || music.duration <= 0) {
+        console.error('Дууны хугацааг уншиж чадсангүй:', music.currentSrc);
+        musicStartPending = false;
+        musicSeekPending = false;
+        return;
+      }
+      if (music.duration <= 53) {
+        console.error('Дуу 53 секундээс богино байна:', music.duration);
+        musicStartPending = false;
+        musicSeekPending = false;
+        return;
+      }
+      // seeked listener-ийг currentTime өөрчлөхөөс өмнө бүртгэнэ.
+      music.addEventListener('seeked', finishSeek, { once: true });
+      music.currentTime = 53;
+    };
+
+    // Энэ play() нь шууд хэрэглэгчийн товшилтын үед дуудагддаг тул iPhone/Android дээр
+    // autoplay хоригт өртөх магадлал бага. Mute тул seek хийх хүртэл сонсогдохгүй.
+    const playPromise = music.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+      playPromise.catch(error => {
+        console.error('Гар утас дуу тоглуулахыг хориглолоо:', error);
+      });
+    }
 
     if (music.readyState >= HTMLMediaElement.HAVE_METADATA) {
       seekTo53();
     } else {
-      music.addEventListener("loadedmetadata", seekTo53, { once: true });
-      // Хэрэглэгчийн товшилтын үед play-г эхлүүлнэ; mute тул эхний секундүүд сонсогдохгүй.
-      music.play().catch(error => {
-        console.error("Дуу тоглуулах боломжгүй байна:", error);
-      });
+      music.addEventListener('loadedmetadata', seekTo53, { once: true });
     }
   }
 
