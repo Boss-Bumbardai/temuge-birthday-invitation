@@ -937,6 +937,44 @@ h2,
     console.error("Дууны файл ачаалж чадсангүй:", music.currentSrc, music.error);
   });
 
+  // Сайтаас өөр tab/app руу шилжихэд дууг зогсооно.
+  // Сайт руу буцаж ирвэл урилга нээлттэй, дуу асаалттай үед үргэлжлүүлнэ.
+  let wasPlayingBeforeHide = false;
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      wasPlayingBeforeHide = !music.paused && musicEnabled;
+      music.pause();
+      music.muted = true;
+    } else if (
+      wasPlayingBeforeHide &&
+      musicEnabled &&
+      document.body.classList.contains("opened")
+    ) {
+      wasPlayingBeforeHide = false;
+      music.muted = false;
+      const targetVolume = Number(musicVolume.value) / 100;
+      music.volume = 0;
+      music.play().then(() => {
+        const startedAt = performance.now();
+        const fade = (now) => {
+          if (document.hidden || !musicEnabled || music.paused) return;
+          const progress = Math.min(1, (now - startedAt) / 1200);
+          music.volume = targetVolume * progress;
+          if (progress < 1) requestAnimationFrame(fade);
+        };
+        requestAnimationFrame(fade);
+      }).catch(error => {
+        console.warn("Сайт руу буцаж ирэхэд дууг автоматаар үргэлжлүүлэх боломжгүй:", error);
+      });
+    }
+  });
+
+  window.addEventListener("pagehide", () => {
+    wasPlayingBeforeHide = false;
+    music.pause();
+    music.muted = true;
+  });
+
   function updateMusicControls() {
     musicToggle.textContent = musicEnabled ? "🔊 Дууг унтраах" : "🔇 Дууг асаах";
     musicToggle.setAttribute("aria-pressed", String(musicEnabled));
