@@ -921,49 +921,24 @@ h2,
   const replayButton = document.getElementById("replayInvitation");
   const invitation = document.getElementById("invitation");
 
-  const START_AT = 53;        // дууг эхлүүлэх секунд
-  const END_AT = 105;         // дууг зогсоох секунд (1:45)
-  const FADE_OUT = 6;         // дуусахын өмнөх зөөлөн сулрах хугацаа (секунд)
-  const MUSIC_VOLUME = 0.5;   // дууны хэмжээ (0-1)
+  const FADE_IN_SECONDS = 3;  // Дуу эхнээсээ 3 секундэд зөөлөн чангарна
+  const MUSIC_VOLUME = 0.5;   // Дууны хэмжээ (0-1)
 
   // temuge-song.mp3 файл index.html-тэй нэг үндсэн хавтсанд байна.
   const music = new Audio(new URL("./temuge-song.mp3", document.baseURI).href);
   music.preload = "auto";
-  music.loop = false;
-  music.volume = MUSIC_VOLUME;
+  music.loop = true;
+  music.volume = 0;
 
   const musicToggle = document.getElementById("musicToggle");
   let musicEnabled = true;
   let isOpening = false;
   let openTimer;
   let fadeTimer = null;
-  let endWatcher = null;
 
   music.addEventListener("error", () => {
     console.error("Дууны файл ачаалж чадсангүй:", music.currentSrc, music.error);
   });
-
-  // 1:39-өөс дуу сулрч эхэлж, яг 1:45 дээр бүр мөсөн дуусч зогсоно.
-  // timeupdate утсан дээр ховор дуудагддаг тул 30 мс тутамд өөрөө шалгана.
-  function watchEnd() {
-    clearInterval(endWatcher);
-    endWatcher = setInterval(() => {
-      const t = music.currentTime;
-
-      if (t >= END_AT) {
-        stopMusic();
-        return;
-      }
-
-      if (t >= END_AT - FADE_OUT) {
-        clearInterval(fadeTimer);
-        fadeTimer = null;
-        music.volume = MUSIC_VOLUME * Math.max(0, (END_AT - t) / FADE_OUT);
-      }
-    }, 30);
-  }
-
-  music.addEventListener("playing", watchEnd);
 
   function updateMusicButton() {
     musicToggle.textContent = musicEnabled ? "🔊" : "🔇";
@@ -972,59 +947,45 @@ h2,
 
   function stopMusic() {
     clearInterval(fadeTimer);
-    clearInterval(endWatcher);
     fadeTimer = null;
-    endWatcher = null;
     music.pause();
   }
 
-  function fadeIn() {
-    clearInterval(fadeTimer);
-    const startedAt = Date.now();
-    const duration = 2500;
-    fadeTimer = setInterval(() => {
-      const p = Math.min(1, (Date.now() - startedAt) / duration);
-      music.volume = MUSIC_VOLUME * p;
-      if (p >= 1) {
-        clearInterval(fadeTimer);
-        fadeTimer = null;
-      }
-    }, 50);
-  }
-
-  // Дууг 53 секундээс шууд эхлүүлнэ. Заавал товшилтын үед дуудагдана.
-  function startMusicAt53() {
+  // Урилга нээх үед дууг эхнээс нь тоглуулж, аажмаар чангаруулна.
+  function startMusicFromBeginning() {
     if (!musicEnabled) return;
 
-    // Эхлэх байрлалыг play()-ээс өмнө тохируулна.
-    try { music.currentTime = START_AT; } catch (e) {}
-
-    // Metadata дараа ачаалагдвал байрлалыг дахин баталгаажуулна.
-    const fixPosition = () => {
-      if (Number.isFinite(music.duration) && music.duration > START_AT &&
-          music.currentTime < START_AT - 1) {
-        try { music.currentTime = START_AT; } catch (e) {}
-      }
-    };
-    music.addEventListener("loadedmetadata", fixPosition, { once: true });
-    fixPosition();
+    clearInterval(fadeTimer);
+    try { music.currentTime = 0; } catch (e) {}
 
     music.volume = 0;
     music.muted = false;
-    music.play().then(fadeIn).catch(error => {
+
+    music.play().then(() => {
+      const startedAt = Date.now();
+      fadeTimer = setInterval(() => {
+        const progress = Math.min(1, (Date.now() - startedAt) / (FADE_IN_SECONDS * 1000));
+        music.volume = MUSIC_VOLUME * progress;
+        if (progress >= 1) {
+          clearInterval(fadeTimer);
+          fadeTimer = null;
+        }
+      }, 50);
+    }).catch(error => {
       console.error("Дуу тоглуулах боломжгүй:", error);
     });
   }
 
-  // Зогсоосон дууг тасалсан газраас нь үргэлжлүүлнэ.
   function resumeMusic() {
     if (!musicEnabled) return;
-    if (music.currentTime < START_AT - 1 || music.currentTime >= END_AT - 1) {
-      startMusicAt53();
+    if (music.ended) {
+      startMusicFromBeginning();
       return;
     }
-    music.volume = 0;
-    music.play().then(fadeIn).catch(error => {
+
+    clearInterval(fadeTimer);
+    music.volume = MUSIC_VOLUME;
+    music.play().catch(error => {
       console.error("Дуу тоглуулах боломжгүй:", error);
     });
   }
@@ -1079,7 +1040,7 @@ h2,
     isOpening = true;
 
     // Заавал товшилтын үед шууд дуудна.
-    startMusicAt53();
+    startMusicFromBeginning();
 
     document.body.classList.add("opening");
     invitation.setAttribute("aria-hidden", "false");
